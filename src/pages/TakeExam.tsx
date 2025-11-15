@@ -26,6 +26,18 @@ const TakeExam: React.FC = () => {
       if (!id) return;
       const hw = await getHomeworkById(id);
       if (hw) {
+        // Check if exam/quiz is available (either manually launched by teacher or deadline reached)
+        const now = new Date();
+        const deadlineDate = hw.deadline.toDate();
+        const isManuallyAvailable = hw.isAvailable === true;
+        const isDeadlineReached = now >= deadlineDate;
+
+        if (!isManuallyAvailable && !isDeadlineReached) {
+          alert('This exam/quiz is not yet available. It will be available when the teacher launches it or when the deadline arrives.');
+          navigate(`/homework/${id}`);
+          return;
+        }
+
         setHomework(hw);
 
         // Check if already submitted

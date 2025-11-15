@@ -69,6 +69,15 @@ const HomeworkDetail: React.FC = () => {
   const late = isLate(homework.deadline);
   const dueTomorrow = isDueTomorrow(homework.deadline);
   const isCompleted = homework.studentCompletions?.[userData?.uid || ''] || false;
+  const isExamOrQuiz = homework.type === 'exam' || homework.type === 'quiz';
+
+  // Check if exam/quiz is available
+  const now = new Date();
+  const deadlineDate = homework.deadline.toDate();
+  const isManuallyAvailable = homework.isAvailable === true;
+  const isDeadlineReached = now >= deadlineDate;
+  const canTakeExam = isManuallyAvailable || isDeadlineReached;
+  const hasSubmitted = homework.submissions && userData?.uid && homework.submissions[userData.uid];
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -126,6 +135,13 @@ const HomeworkDetail: React.FC = () => {
             <span className="text-gray-800">{formatDate(homework.deadline)}</span>
           </div>
 
+          {isExamOrQuiz && (
+            <div>
+              <span className="text-gray-600 font-medium">Duration: </span>
+              <span className="text-gray-800">{homework.duration} minutes</span>
+            </div>
+          )}
+
           <div>
             <h2 className="text-xl font-semibold mb-2">Description</h2>
             <p className="text-gray-700 whitespace-pre-wrap">{homework.description}</p>
@@ -159,7 +175,41 @@ const HomeworkDetail: React.FC = () => {
           </div>
         )}
 
-        {userData?.role === 'eleve' && !isCompleted && (
+        {/* Show exam/quiz status and button for students */}
+        {userData?.role === 'eleve' && isExamOrQuiz && (
+          <div className="mb-6">
+            {hasSubmitted ? (
+              <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg">
+                <p className="font-semibold">You have submitted this {homework.type}</p>
+                {homework.submissions[userData.uid].grade !== undefined && (
+                  <p className="text-sm mt-1">
+                    Score: {homework.submissions[userData.uid].grade}/{homework.submissions[userData.uid].maxGrade}
+                  </p>
+                )}
+              </div>
+            ) : canTakeExam ? (
+              <button
+                onClick={() => navigate(`/take-exam/${homework.id}`)}
+                className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-all shadow-md hover:shadow-lg"
+              >
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
+                  <path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
+                </svg>
+                Start {homework.type === 'exam' ? 'Exam' : 'Quiz'}
+              </button>
+            ) : (
+              <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded-lg">
+                <p className="font-semibold">This {homework.type} is not yet available</p>
+                <p className="text-sm mt-1">
+                  It will be available when the teacher launches it or when the deadline arrives ({formatDate(homework.deadline)})
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {userData?.role === 'eleve' && !isCompleted && !isExamOrQuiz && (
           <button
             onClick={handleMarkComplete}
             className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold transition-all shadow-md hover:shadow-lg"

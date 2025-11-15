@@ -256,35 +256,43 @@ const HomeworkCard: React.FC<HomeworkCardProps> = ({
             )}
 
             {/* Exam/Quiz status for students */}
-            {role === 'eleve' && (homework.type === 'exam' || homework.type === 'quiz') && homework.locationType === 'online' && (
-              <>
-                {!homework.isAvailable ? (
-                  <div className="inline-flex items-center gap-2 bg-gray-400 text-white px-4 py-2 rounded-lg text-sm font-semibold">
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z" clipRule="evenodd" />
-                    </svg>
-                    Waiting for Teacher
-                  </div>
-                ) : homework.submissions && homework.submissions[userData?.uid || ''] ? (
-                  <div className="inline-flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-semibold">
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
-                    Submitted
-                  </div>
-                ) : (
-                  <Link
-                    to={`/homework/${homework.id}/take`}
-                    className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all shadow-md hover:shadow-lg"
-                  >
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
-                    </svg>
-                    Start {homework.type === 'exam' ? 'Exam' : 'Quiz'}
-                  </Link>
-                )}
-              </>
-            )}
+            {role === 'eleve' && (homework.type === 'exam' || homework.type === 'quiz') && homework.locationType === 'online' && (() => {
+              const now = new Date();
+              const deadlineDate = homework.deadline?.toDate ? homework.deadline.toDate() : new Date(homework.deadline);
+              const isManuallyAvailable = homework.isAvailable === true;
+              const isDeadlineReached = now >= deadlineDate;
+              const canTakeExam = isManuallyAvailable || isDeadlineReached;
+
+              return (
+                <>
+                  {homework.submissions && homework.submissions[userData?.uid || ''] ? (
+                    <div className="inline-flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-semibold">
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      Submitted
+                    </div>
+                  ) : !canTakeExam ? (
+                    <div className="inline-flex items-center gap-2 bg-gray-400 text-white px-4 py-2 rounded-lg text-sm font-semibold">
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z" clipRule="evenodd" />
+                      </svg>
+                      Not Available
+                    </div>
+                  ) : (
+                    <Link
+                      to={`/homework/${homework.id}/take`}
+                      className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all shadow-md hover:shadow-lg"
+                    >
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                      </svg>
+                      Start {homework.type === 'exam' ? 'Exam' : 'Quiz'}
+                    </Link>
+                  )}
+                </>
+              );
+            })()}
 
             {/* In-person exam/quiz indicator for students */}
             {role === 'eleve' && (homework.type === 'exam' || homework.type === 'quiz') && homework.locationType === 'in-person' && (
