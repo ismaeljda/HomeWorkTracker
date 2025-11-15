@@ -31,15 +31,19 @@ const DashboardProf: React.FC = () => {
   const [subjects, setSubjects] = useState<SubjectWithClass[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSubject, setSelectedSubject] = useState('');
+  const [selectedType, setSelectedType] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     title: '',
+    type: 'homework' as 'homework' | 'exam' | 'quiz',
+    locationType: 'online' as 'online' | 'in-person',
     subjectId: '',
     classId: '',
     description: '',
     deadline: '',
+    duration: 0,
     file: null as File | null
   });
 
@@ -92,6 +96,7 @@ const DashboardProf: React.FC = () => {
 
       const homeworkData = {
         title: formData.title,
+        type: formData.type,
         subjectId: formData.subjectId,
         teacherId: userData?.uid || '',
         classId: formData.classId,
@@ -99,23 +104,37 @@ const DashboardProf: React.FC = () => {
         deadline: Timestamp.fromDate(new Date(formData.deadline)),
         status: 'assigned' as const,
         studentCompletions,
-        fileUrl
+        fileUrl,
+        duration: formData.type !== 'homework' ? formData.duration : undefined,
+        questions: formData.type !== 'homework' ? [] : undefined,
+        submissions: formData.type !== 'homework' ? {} : undefined,
+        isAvailable: formData.type !== 'homework' ? false : undefined, // Exams/quizzes start as not available
+        locationType: formData.locationType
       };
 
       if (editingId) {
         await updateHomework(editingId, homeworkData);
       } else {
-        await addHomework(homeworkData);
+        const newHomeworkId = await addHomework(homeworkData);
+
+        // Redirect to question builder if it's an exam or quiz
+        if (formData.type !== 'homework') {
+          window.location.href = `/homework/${newHomeworkId}/edit-questions`;
+          return;
+        }
       }
 
       setShowForm(false);
       setEditingId(null);
       setFormData({
         title: '',
+        type: 'homework',
+        locationType: 'online',
         subjectId: '',
         classId: '',
         description: '',
         deadline: '',
+        duration: 0,
         file: null
       });
       refetch();
@@ -130,10 +149,13 @@ const DashboardProf: React.FC = () => {
       setEditingId(id);
       setFormData({
         title: homework.title,
+        type: homework.type || 'homework',
+        locationType: homework.locationType || 'online',
         subjectId: homework.subjectId,
         classId: homework.classId,
         description: homework.description,
         deadline: homework.deadline.toDate().toISOString().slice(0, 16),
+        duration: homework.duration || 0,
         file: null
       });
       setShowForm(true);
@@ -151,9 +173,27 @@ const DashboardProf: React.FC = () => {
     }
   };
 
+  const handleToggleAvailability = async (id: string, isAvailable: boolean) => {
+    try {
+      const homework = homeworks.find(hw => hw.id === id);
+      if (!homework) return;
+
+      await updateHomework(id, {
+        ...homework,
+        isAvailable
+      });
+      refetch();
+    } catch (error) {
+      console.error('Error toggling exam availability:', error);
+    }
+  };
+
+  // Sort by deadline (earliest first) and filter
   const filteredHomeworks = homeworks
     .filter((hw) => !selectedSubject || hw.subjectId === selectedSubject)
-    .filter((hw) => filterHomeworks([hw], searchTerm).length > 0);
+    .filter((hw) => !selectedType || (hw.type || 'homework') === selectedType)
+    .filter((hw) => filterHomeworks([hw], searchTerm).length > 0)
+    .sort((a, b) => a.deadline.toMillis() - b.deadline.toMillis());
 
   if (loading) {
     return (
@@ -211,10 +251,13 @@ const DashboardProf: React.FC = () => {
                 setEditingId(null);
                 setFormData({
                   title: '',
+                  type: 'homework',
+                  locationType: 'online',
                   subjectId: '',
                   classId: '',
                   description: '',
                   deadline: '',
+                  duration: 0,
                   file: null
                 });
               }}
@@ -230,6 +273,24 @@ const DashboardProf: React.FC = () => {
                 {editingId ? 'Edit Homework' : 'Add New Homework'}
               </h2>
               <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Type
+              </label>
+              <select
+                value={formData.type}
+                onChange={(e) =>
+                  setFormData({ ...formData, type: e.target.value as 'homework' | 'exam' | 'quiz' })
+                }
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="homework">📚 Homework</option>
+                <option value="exam">📝 Exam</option>
+                <option value="quiz">❓ Quiz</option>
+              </select>
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Title
@@ -303,6 +364,49 @@ const DashboardProf: React.FC = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
+                Location Type
+              </label>
+              <select
+                value={formData.locationType}
+                onChange={(e) =>
+                  setFormData({ ...formData, locationType: e.target.value as 'online' | 'in-person' })
+                }
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="online">💻 Online (via the website)</option>
+                <option value="in-person">🏫 In-Person (in class)</option>
+              </select>
+              <p className="text-sm text-gray-500 mt-1">
+                {formData.locationType === 'online'
+                  ? 'Students will complete this via the website'
+                  : 'Students will complete this in class (for information only)'}
+              </p>
+            </div>
+
+            {formData.type !== 'homework' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Duration (minutes)
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={formData.duration}
+                  onChange={(e) =>
+                    setFormData({ ...formData, duration: parseInt(e.target.value) || 0 })
+                  }
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <p className="text-sm text-gray-500 mt-1">
+                  Time limit for students to complete the {formData.type}
+                </p>
+              </div>
+            )}
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Attachment (optional)
               </label>
               <input
@@ -344,8 +448,11 @@ const DashboardProf: React.FC = () => {
             onSearchChange={setSearchTerm}
             selectedSubject={selectedSubject}
             onSubjectChange={setSelectedSubject}
+            selectedType={selectedType}
+            onTypeChange={setSelectedType}
             subjects={subjects}
             showSubjectFilter
+            showTypeFilter
           />
 
           {filteredHomeworks.length === 0 ? (
@@ -353,17 +460,22 @@ const DashboardProf: React.FC = () => {
               <p className="text-gray-500 text-lg">No homeworks found</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredHomeworks.map((homework) => (
-                <HomeworkCard
-                  key={homework.id}
-                  homework={homework}
-                  onEdit={handleEdit}
-                  onDelete={handleDelete}
-                  showActions
-                  role="prof"
-                />
-              ))}
+            <div className="flex flex-col gap-6">
+              {filteredHomeworks.map((homework) => {
+                const subject = subjects.find(s => s.id === homework.subjectId);
+                return (
+                  <HomeworkCard
+                    key={homework.id}
+                    homework={homework}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                    onToggleAvailability={handleToggleAvailability}
+                    showActions
+                    role="prof"
+                    subjectName={subject?.className ? `${subject.name} - ${subject.className}` : subject?.name}
+                  />
+                );
+              })}
             </div>
           )}
         </>

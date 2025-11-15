@@ -12,6 +12,10 @@ import DashboardAdmin from './pages/DashboardAdmin';
 import AdminSetup from './pages/AdminSetup';
 import HomeworkDetail from './pages/HomeworkDetail';
 import MyCourses from './pages/MyCourses';
+import MyCalendar from './pages/MyCalendar';
+import EditQuestions from './pages/EditQuestions';
+import TakeExam from './pages/TakeExam';
+import Profile from './pages/Profile';
 
 const RootRedirect: React.FC = () => {
   const { userData } = useAuth();
@@ -41,6 +45,7 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/initialize" element={<InitializeDB />} />
+            <Route path="/initialize-db" element={<InitializeDB />} />
 
             <Route
               path="/"
@@ -73,6 +78,18 @@ function App() {
                   <>
                     <Navbar />
                     <MyCourses />
+                  </>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/eleve/calendar"
+              element={
+                <ProtectedRoute allowedRoles={['eleve']}>
+                  <>
+                    <Navbar />
+                    <MyCalendar />
                   </>
                 </ProtectedRoute>
               }
@@ -121,6 +138,42 @@ function App() {
                   <>
                     <Navbar />
                     <HomeworkDetail />
+                  </>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/homework/:id/edit-questions"
+              element={
+                <ProtectedRoute allowedRoles={['prof']}>
+                  <>
+                    <Navbar />
+                    <EditQuestions />
+                  </>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/homework/:id/take"
+              element={
+                <ProtectedRoute allowedRoles={['eleve']}>
+                  <>
+                    <Navbar />
+                    <TakeExam />
+                  </>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/eleve/profile"
+              element={
+                <ProtectedRoute allowedRoles={['eleve']}>
+                  <>
+                    <Navbar />
+                    <Profile />
                   </>
                 </ProtectedRoute>
               }

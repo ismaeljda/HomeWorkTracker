@@ -38,9 +38,40 @@ export interface Subject {
   studentIds: string[]; // List of student UIDs enrolled in this subject
 }
 
+export type HomeworkType = 'homework' | 'exam' | 'quiz';
+export type ExamStatus = 'not-started' | 'available' | 'completed';
+export type LocationType = 'online' | 'in-person';
+
+export interface Question {
+  id: string;
+  type: 'mcq' | 'true-false' | 'open-ended';
+  question: string;
+  options?: string[]; // For MCQ
+  correctAnswer?: string | number; // For MCQ (index) or true-false (true/false)
+  points: number;
+}
+
+export interface StudentAnswer {
+  questionId: string;
+  answer: string | number | boolean;
+  isCorrect?: boolean; // Auto-graded for MCQ and true-false
+  points?: number;
+}
+
+export interface StudentSubmission {
+  studentId: string;
+  answers: StudentAnswer[];
+  submittedAt: Timestamp;
+  grade?: number; // Total points earned
+  maxGrade?: number; // Total points possible
+  gradedBy?: string; // Teacher ID who graded open-ended questions
+  gradedAt?: Timestamp;
+}
+
 export interface Homework {
   id: string;
   title: string;
+  type: HomeworkType; // homework, exam, or quiz
   subjectId: string; // Links to Subject (which has classId and studentIds)
   teacherId: string;
   description: string;
@@ -49,6 +80,12 @@ export interface Homework {
   fileUrl?: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
+  // For exams and quizzes
+  questions?: Question[];
+  submissions?: { [studentId: string]: StudentSubmission };
+  duration?: number; // Duration in minutes for exams/quizzes
+  isAvailable?: boolean; // Teacher controls when exam/quiz becomes available
+  locationType?: LocationType; // 'online' or 'in-person'
 }
 
 // Homework CRUD operations
