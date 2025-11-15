@@ -36,6 +36,26 @@ export interface Subject {
   classId: string; // Subject belongs to a class
   teacherId: string; // Teacher assigned to this subject
   studentIds: string[]; // List of student UIDs enrolled in this subject
+  schedule?: CourseSchedule[]; // Weekly schedule for this subject
+  announcements?: Announcement[]; // Course announcements
+}
+
+export interface Announcement {
+  id: string;
+  message: string;
+  createdAt: Timestamp;
+  createdBy: string; // Teacher ID
+}
+
+export interface CourseSchedule {
+  id?: string;
+  subjectId: string;
+  dayOfWeek: number; // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+  startTime: string; // Format: "HH:MM" (e.g., "08:00")
+  endTime: string; // Format: "HH:MM" (e.g., "09:30")
+  room?: string; // Room number or name
+  isCancelled?: boolean; // If teacher cancelled this specific occurrence
+  cancelledDate?: string; // ISO date string if cancelled for a specific date
 }
 
 export type HomeworkType = 'homework' | 'exam' | 'quiz';

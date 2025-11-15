@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { getHomeworkById, updateHomework, type Homework } from '../firebase/firestore';
 import { useAuth } from '../context/AuthContext';
 import { formatDate, isLate, isDueTomorrow } from '../utils/helpers';
+import AssignmentChat from '../components/AssignmentChat';
 
 const HomeworkDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -27,10 +28,15 @@ const HomeworkDetail: React.FC = () => {
   }, [id]);
 
   const handleMarkComplete = async () => {
-    if (!homework) return;
+    if (!homework || !userData?.uid) return;
+
+    const confirmed = window.confirm('Are you sure you want to mark this assignment as complete?');
+    if (!confirmed) return;
+
     try {
-      await updateHomework(homework.id, { status: 'complete' });
-      setHomework({ ...homework, status: 'complete' });
+      const updatedCompletions = { ...homework.studentCompletions, [userData.uid]: true };
+      await updateHomework(homework.id, { studentCompletions: updatedCompletions });
+      setHomework({ ...homework, studentCompletions: updatedCompletions });
     } catch (error) {
       console.error('Error marking homework as complete:', error);
     }
@@ -62,6 +68,7 @@ const HomeworkDetail: React.FC = () => {
 
   const late = isLate(homework.deadline);
   const dueTomorrow = isDueTomorrow(homework.deadline);
+  const isCompleted = homework.studentCompletions?.[userData?.uid || ''] || false;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -102,12 +109,12 @@ const HomeworkDetail: React.FC = () => {
               )}
               <span
                 className={`text-sm px-3 py-1 rounded-full ${
-                  homework.status === 'complete'
+                  isCompleted
                     ? 'bg-green-500 text-white'
                     : 'bg-gray-300 text-gray-700'
                 }`}
               >
-                {homework.status === 'complete' ? 'Complete' : 'Assigned'}
+                {isCompleted ? 'Complete' : 'Assigned'}
               </span>
             </div>
           </div>
@@ -152,15 +159,26 @@ const HomeworkDetail: React.FC = () => {
           </div>
         )}
 
-        {userData?.role === 'eleve' && homework.status !== 'complete' && (
+        {userData?.role === 'eleve' && !isCompleted && (
           <button
             onClick={handleMarkComplete}
-            className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg transition"
+            className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold transition-all shadow-md hover:shadow-lg"
           >
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+            </svg>
             Mark as Complete
           </button>
         )}
       </div>
+
+      {/* Assignment Chat */}
+      <AssignmentChat
+        assignmentId={homework.id}
+        assignmentTitle={homework.title}
+        assignmentDescription={homework.description}
+        isTeacher={userData?.role === 'prof'}
+      />
     </div>
   );
 };

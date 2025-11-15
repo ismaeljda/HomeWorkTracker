@@ -16,6 +16,7 @@ import MyCalendar from './pages/MyCalendar';
 import EditQuestions from './pages/EditQuestions';
 import TakeExam from './pages/TakeExam';
 import Profile from './pages/Profile';
+import CourseDetails from './pages/CourseDetails';
 
 const RootRedirect: React.FC = () => {
   const { userData } = useAuth();
@@ -108,6 +109,30 @@ function App() {
             />
 
             <Route
+              path="/prof/courses"
+              element={
+                <ProtectedRoute allowedRoles={['prof']}>
+                  <>
+                    <Navbar />
+                    <MyCourses />
+                  </>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/prof/calendar"
+              element={
+                <ProtectedRoute allowedRoles={['prof']}>
+                  <>
+                    <Navbar />
+                    <MyCalendar />
+                  </>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
               path="/admin"
               element={
                 <ProtectedRoute allowedRoles={['admin']}>
@@ -174,6 +199,18 @@ function App() {
                   <>
                     <Navbar />
                     <Profile />
+                  </>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/course/:courseId"
+              element={
+                <ProtectedRoute allowedRoles={['eleve', 'prof']}>
+                  <>
+                    <Navbar />
+                    <CourseDetails />
                   </>
                 </ProtectedRoute>
               }

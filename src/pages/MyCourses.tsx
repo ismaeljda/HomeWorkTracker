@@ -1,57 +1,26 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { getStudentSubjects, type Subject } from '../firebase/firestore';
-
-const colorSchemes = [
-  {
-    gradient: 'from-blue-500 to-indigo-600',
-    iconBg: 'bg-blue-100',
-    iconColor: 'text-blue-600',
-    badge: 'bg-blue-200 text-blue-800',
-  },
-  {
-    gradient: 'from-purple-500 to-pink-600',
-    iconBg: 'bg-purple-100',
-    iconColor: 'text-purple-600',
-    badge: 'bg-purple-200 text-purple-800',
-  },
-  {
-    gradient: 'from-green-500 to-teal-600',
-    iconBg: 'bg-green-100',
-    iconColor: 'text-green-600',
-    badge: 'bg-green-200 text-green-800',
-  },
-  {
-    gradient: 'from-orange-500 to-red-600',
-    iconBg: 'bg-orange-100',
-    iconColor: 'text-orange-600',
-    badge: 'bg-orange-200 text-orange-800',
-  },
-  {
-    gradient: 'from-cyan-500 to-blue-600',
-    iconBg: 'bg-cyan-100',
-    iconColor: 'text-cyan-600',
-    badge: 'bg-cyan-200 text-cyan-800',
-  },
-  {
-    gradient: 'from-rose-500 to-pink-600',
-    iconBg: 'bg-rose-100',
-    iconColor: 'text-rose-600',
-    badge: 'bg-rose-200 text-rose-800',
-  },
-];
+import { getStudentSubjects, getTeacherSubjects, type Subject } from '../firebase/firestore';
+import { getCourseColor } from '../utils/courseColors';
 
 const MyCourses: React.FC = () => {
   const { userData } = useAuth();
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchSubjects = async () => {
       if (!userData?.uid) return;
       try {
         setLoading(true);
-        const data = await getStudentSubjects(userData.uid);
+        let data: Subject[] = [];
+        if (userData.role === 'eleve') {
+          data = await getStudentSubjects(userData.uid);
+        } else if (userData.role === 'prof') {
+          data = await getTeacherSubjects(userData.uid);
+        }
         setSubjects(data);
       } catch (error) {
         console.error('Error fetching subjects:', error);
@@ -60,7 +29,7 @@ const MyCourses: React.FC = () => {
       }
     };
     fetchSubjects();
-  }, [userData?.uid]);
+  }, [userData?.uid, userData?.role]);
 
   if (loading) {
     return (
@@ -72,7 +41,9 @@ const MyCourses: React.FC = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-4xl font-bold mb-8 text-gray-800">My Courses</h1>
+      <h1 className="text-4xl font-bold mb-8 text-gray-800">
+        {userData?.role === 'prof' ? 'My Teaching Courses' : 'My Courses'}
+      </h1>
 
       {subjects.length === 0 ? (
         <div className="text-center py-12 bg-white rounded-lg shadow">
@@ -80,12 +51,13 @@ const MyCourses: React.FC = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {subjects.map((subject, index) => {
-            const colors = colorSchemes[index % colorSchemes.length];
+          {subjects.map((subject) => {
+            const colors = getCourseColor(subject.id);
             return (
               <div
                 key={subject.id}
-                className={`relative overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1`}
+                onClick={() => navigate(`/course/${subject.id}`)}
+                className={`relative overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer`}
               >
                 <div className={`bg-gradient-to-br ${colors.gradient} p-8 text-white`}>
                   <div className="flex items-start justify-between mb-6">

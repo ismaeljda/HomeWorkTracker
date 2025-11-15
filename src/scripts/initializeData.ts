@@ -210,10 +210,39 @@ export const initializeDatabase = async () => {
       }
     }
 
-    // 6. Create Subjects for 6A
-    console.log('\n📖 Creating subjects for 6A...');
+    // 6. Create Subjects for 6A with schedules
+    console.log('\n📖 Creating subjects with schedules for 6A...');
     const student6aIds = createdUsers.students_6a.map((s: any) => s.uid);
     const subjectIds6a: string[] = [];
+
+    // Define schedule templates (different time slots for each subject)
+    const scheduleTemplates = [
+      // Mathematics - Monday & Thursday 08:00-09:30
+      [
+        { dayOfWeek: 1, startTime: '08:00', endTime: '09:30', room: 'Room 101' },
+        { dayOfWeek: 4, startTime: '08:00', endTime: '09:30', room: 'Room 101' }
+      ],
+      // English - Tuesday & Friday 10:00-11:30
+      [
+        { dayOfWeek: 2, startTime: '10:00', endTime: '11:30', room: 'Room 102' },
+        { dayOfWeek: 5, startTime: '10:00', endTime: '11:30', room: 'Room 102' }
+      ],
+      // History - Monday & Wednesday 14:00-15:30
+      [
+        { dayOfWeek: 1, startTime: '14:00', endTime: '15:30', room: 'Room 103' },
+        { dayOfWeek: 3, startTime: '14:00', endTime: '15:30', room: 'Room 103' }
+      ],
+      // Science - Tuesday & Thursday 13:00-14:30
+      [
+        { dayOfWeek: 2, startTime: '13:00', endTime: '14:30', room: 'Lab 201' },
+        { dayOfWeek: 4, startTime: '13:00', endTime: '14:30', room: 'Lab 201' }
+      ],
+      // Geography - Wednesday & Friday 15:45-17:15
+      [
+        { dayOfWeek: 3, startTime: '15:45', endTime: '17:15', room: 'Room 104' },
+        { dayOfWeek: 5, startTime: '15:45', endTime: '17:15', room: 'Room 104' }
+      ],
+    ];
 
     for (let i = 0; i < subjectNames.length; i++) {
       const subjectId = `subject_${subjectNames[i].toLowerCase().replace(/[^a-z]/g, '')}_6a`;
@@ -223,15 +252,23 @@ export const initializeDatabase = async () => {
       const teacherId = assignedTeacher?.uid;
 
       if (teacherId) {
+        const schedule = scheduleTemplates[i].map(slot => ({
+          ...slot,
+          subjectId: subjectId,
+          id: `${subjectId}_${slot.dayOfWeek}_${slot.startTime}`,
+          isCancelled: false
+        }));
+
         await setDoc(doc(db, 'subjects', subjectId), {
           id: subjectId,
           name: subjectNames[i],
           classId: 'class_6a',
           teacherId: teacherId,
           studentIds: student6aIds,
+          schedule: schedule,
         });
         subjectIds6a.push(subjectId);
-        console.log(`✅ Subject created: ${subjectNames[i]} (6A) - Teacher: ${assignedTeacher.name}`);
+        console.log(`✅ Subject created: ${subjectNames[i]} (6A) - Teacher: ${assignedTeacher.name} - ${schedule.length} classes/week`);
       }
     }
 
@@ -244,10 +281,39 @@ export const initializeDatabase = async () => {
       );
     }
 
-    // 7. Create Subjects for 6B
-    console.log('\n📖 Creating subjects for 6B...');
+    // 7. Create Subjects for 6B with schedules
+    console.log('\n📖 Creating subjects with schedules for 6B...');
     const student6bIds = createdUsers.students_6b.map((s: any) => s.uid);
     const subjectIds6b: string[] = [];
+
+    // Same schedule templates but different rooms
+    const scheduleTemplates6b = [
+      // Mathematics - Monday & Thursday 09:45-11:15
+      [
+        { dayOfWeek: 1, startTime: '09:45', endTime: '11:15', room: 'Room 105' },
+        { dayOfWeek: 4, startTime: '09:45', endTime: '11:15', room: 'Room 105' }
+      ],
+      // English - Tuesday & Friday 08:00-09:30
+      [
+        { dayOfWeek: 2, startTime: '08:00', endTime: '09:30', room: 'Room 106' },
+        { dayOfWeek: 5, startTime: '08:00', endTime: '09:30', room: 'Room 106' }
+      ],
+      // History - Wednesday & Friday 13:00-14:30
+      [
+        { dayOfWeek: 3, startTime: '13:00', endTime: '14:30', room: 'Room 107' },
+        { dayOfWeek: 5, startTime: '13:00', endTime: '14:30', room: 'Room 107' }
+      ],
+      // Science - Monday & Thursday 13:00-14:30
+      [
+        { dayOfWeek: 1, startTime: '13:00', endTime: '14:30', room: 'Lab 202' },
+        { dayOfWeek: 4, startTime: '13:00', endTime: '14:30', room: 'Lab 202' }
+      ],
+      // Geography - Tuesday & Wednesday 10:00-11:30
+      [
+        { dayOfWeek: 2, startTime: '10:00', endTime: '11:30', room: 'Room 108' },
+        { dayOfWeek: 3, startTime: '10:00', endTime: '11:30', room: 'Room 108' }
+      ],
+    ];
 
     for (let i = 0; i < subjectNames.length; i++) {
       const subjectId = `subject_${subjectNames[i].toLowerCase().replace(/[^a-z]/g, '')}_6b`;
@@ -257,15 +323,23 @@ export const initializeDatabase = async () => {
       const teacherId = assignedTeacher?.uid;
 
       if (teacherId) {
+        const schedule = scheduleTemplates6b[i].map(slot => ({
+          ...slot,
+          subjectId: subjectId,
+          id: `${subjectId}_${slot.dayOfWeek}_${slot.startTime}`,
+          isCancelled: false
+        }));
+
         await setDoc(doc(db, 'subjects', subjectId), {
           id: subjectId,
           name: subjectNames[i],
           classId: 'class_6b',
           teacherId: teacherId,
           studentIds: student6bIds,
+          schedule: schedule,
         });
         subjectIds6b.push(subjectId);
-        console.log(`✅ Subject created: ${subjectNames[i]} (6B) - Teacher: ${assignedTeacher.name}`);
+        console.log(`✅ Subject created: ${subjectNames[i]} (6B) - Teacher: ${assignedTeacher.name} - ${schedule.length} classes/week`);
       }
     }
 
