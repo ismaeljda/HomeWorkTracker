@@ -29,9 +29,9 @@ const RootRedirect: React.FC = () => {
     case 'admin':
       return <Navigate to="/admin" />;
     case 'prof':
-      return <Navigate to="/prof" />;
+      return <Navigate to="/prof/courses" />;
     case 'eleve':
-      return <Navigate to="/eleve" />;
+      return <Navigate to="/eleve/courses" />;
     default:
       return <Navigate to="/login" />;
   }

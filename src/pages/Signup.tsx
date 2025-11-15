@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { doc, setDoc, collection, query, where, getDocs, updateDoc } from 'firebase/firestore';
@@ -14,8 +14,28 @@ const Signup: React.FC = () => {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signup } = useAuth();
+  const { signup, currentUser, userData } = useAuth();
   const navigate = useNavigate();
+
+  // Redirect when user is logged in and userData is loaded
+  useEffect(() => {
+    if (currentUser && userData) {
+      // Navigate to courses page based on role
+      switch (userData.role) {
+        case 'admin':
+          navigate('/admin');
+          break;
+        case 'prof':
+          navigate('/prof/courses');
+          break;
+        case 'eleve':
+          navigate('/eleve/courses');
+          break;
+        default:
+          navigate('/');
+      }
+    }
+  }, [currentUser, userData, navigate]);
 
   const handleVerifyCode = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,7 +106,7 @@ const Signup: React.FC = () => {
         userId: user.uid
       });
 
-      navigate('/');
+      // Navigation will be handled by useEffect
     } catch (err: any) {
       if (err.code === 'auth/email-already-in-use') {
         setError('Email already in use');
@@ -94,7 +114,6 @@ const Signup: React.FC = () => {
         setError('Failed to create account');
       }
       console.error('Signup error:', err);
-    } finally {
       setLoading(false);
     }
   };

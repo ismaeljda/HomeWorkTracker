@@ -76,52 +76,121 @@ const DashboardProf: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    console.log('Form submitted with data:', formData);
+    console.log('Editing ID:', editingId);
+
     try {
       let fileUrl = '';
 
       if (formData.file) {
+        console.log('Uploading file...');
         const filePath = `homeworks/${Date.now()}_${formData.file.name}`;
         fileUrl = await uploadFile(formData.file, filePath);
+        console.log('File uploaded:', fileUrl);
       }
-
-      // Get student IDs from selected subject
-      const selectedSubject = subjects.find(s => s.id === formData.subjectId);
-      const studentCompletions: { [studentId: string]: boolean } = {};
-
-      if (selectedSubject?.studentIds) {
-        selectedSubject.studentIds.forEach(studentId => {
-          studentCompletions[studentId] = false;
-        });
-      }
-
-      const homeworkData = {
-        title: formData.title,
-        type: formData.type,
-        subjectId: formData.subjectId,
-        teacherId: userData?.uid || '',
-        classId: formData.classId,
-        description: formData.description,
-        deadline: Timestamp.fromDate(new Date(formData.deadline)),
-        status: 'assigned' as const,
-        studentCompletions,
-        fileUrl,
-        duration: formData.type !== 'homework' ? formData.duration : undefined,
-        questions: formData.type !== 'homework' ? [] : undefined,
-        submissions: formData.type !== 'homework' ? {} : undefined,
-        isAvailable: formData.type !== 'homework' ? false : undefined, // Exams/quizzes start as not available
-        locationType: formData.locationType
-      };
 
       if (editingId) {
+        console.log('UPDATE MODE - Editing homework:', editingId);
+        // EDITING MODE: Preserve existing data
+        const existingHomework = homeworks.find(hw => hw.id === editingId);
+
+        const homeworkData: any = {
+          title: formData.title,
+          type: formData.type,
+          subjectId: formData.subjectId,
+          classId: formData.classId,
+          description: formData.description,
+          deadline: Timestamp.fromDate(new Date(formData.deadline)),
+          locationType: formData.locationType
+        };
+
+        // Only add duration if it's an exam or quiz
+        if (formData.type !== 'homework') {
+          homeworkData.duration = formData.duration;
+        }
+
+        // Only update fileUrl if a new file was uploaded
+        if (fileUrl) {
+          homeworkData.fileUrl = fileUrl;
+        }
+
+        // Preserve existing data that shouldn't be overwritten
+        if (existingHomework) {
+          // Keep existing student completions
+          if (existingHomework.studentCompletions) {
+            homeworkData.studentCompletions = existingHomework.studentCompletions;
+          }
+          // Keep existing questions for exams/quizzes
+          if (existingHomework.questions) {
+            homeworkData.questions = existingHomework.questions;
+          }
+          // Keep existing submissions
+          if (existingHomework.submissions) {
+            homeworkData.submissions = existingHomework.submissions;
+          }
+          // Keep existing isAvailable status
+          if (existingHomework.isAvailable !== undefined) {
+            homeworkData.isAvailable = existingHomework.isAvailable;
+          }
+        }
+
+        console.log('Updating with data:', homeworkData);
         await updateHomework(editingId, homeworkData);
+        console.log('Update successful!');
+        alert('Homework updated successfully!');
       } else {
+        console.log('CREATE MODE - Creating new homework');
+        // CREATE MODE: Initialize new homework
+        const selectedSubject = subjects.find(s => s.id === formData.subjectId);
+        console.log('Selected subject:', selectedSubject);
+
+        const studentCompletions: { [studentId: string]: boolean } = {};
+
+        if (selectedSubject?.studentIds) {
+          selectedSubject.studentIds.forEach(studentId => {
+            studentCompletions[studentId] = false;
+          });
+        }
+
+        const homeworkData: any = {
+          title: formData.title,
+          type: formData.type,
+          subjectId: formData.subjectId,
+          teacherId: userData?.uid || '',
+          classId: formData.classId,
+          description: formData.description,
+          deadline: Timestamp.fromDate(new Date(formData.deadline)),
+          status: 'assigned' as const,
+          studentCompletions,
+          locationType: formData.locationType
+        };
+
+        // Only add fileUrl if it exists
+        if (fileUrl) {
+          homeworkData.fileUrl = fileUrl;
+        }
+
+        // Only add exam/quiz specific fields if it's not a homework
+        if (formData.type !== 'homework') {
+          homeworkData.duration = formData.duration;
+          homeworkData.questions = [];
+          homeworkData.submissions = {};
+          homeworkData.isAvailable = false;
+        }
+
+        console.log('Creating homework with data:', homeworkData);
         const newHomeworkId = await addHomework(homeworkData);
+        console.log('Homework created with ID:', newHomeworkId);
 
         // Redirect to question builder if it's an exam or quiz
         if (formData.type !== 'homework') {
+          console.log('Redirecting to question builder...');
           window.location.href = `/homework/${newHomeworkId}/edit-questions`;
           return;
         }
+
+        alert('Homework created successfully!');
       }
 
       setShowForm(false);
@@ -137,9 +206,13 @@ const DashboardProf: React.FC = () => {
         duration: 0,
         file: null
       });
-      refetch();
+
+      console.log('Refetching homeworks...');
+      await refetch();
+      console.log('Refetch complete');
     } catch (error) {
       console.error('Error saving homework:', error);
+      alert(`Error saving homework: ${error instanceof Error ? error.message : 'Unknown error'}. Please check the console for details.`);
     }
   };
 
@@ -159,6 +232,9 @@ const DashboardProf: React.FC = () => {
         file: null
       });
       setShowForm(true);
+
+      // Scroll to top to show the form
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 

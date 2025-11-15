@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
@@ -7,8 +7,28 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, currentUser, userData } = useAuth();
   const navigate = useNavigate();
+
+  // Redirect when user is logged in and userData is loaded
+  useEffect(() => {
+    if (currentUser && userData) {
+      // Navigate to courses page based on role
+      switch (userData.role) {
+        case 'admin':
+          navigate('/admin');
+          break;
+        case 'prof':
+          navigate('/prof/courses');
+          break;
+        case 'eleve':
+          navigate('/eleve/courses');
+          break;
+        default:
+          navigate('/');
+      }
+    }
+  }, [currentUser, userData, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -17,11 +37,10 @@ const Login: React.FC = () => {
 
     try {
       await login(email, password);
-      navigate('/');
+      // Navigation will be handled by useEffect
     } catch (err) {
       setError('Failed to log in. Please check your credentials.');
       console.error('Login error:', err);
-    } finally {
       setLoading(false);
     }
   };
