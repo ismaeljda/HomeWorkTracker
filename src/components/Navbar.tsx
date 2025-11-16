@@ -1,9 +1,11 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTutorial } from '../context/TutorialContext';
 
 const Navbar: React.FC = () => {
   const { currentUser, userData, logout } = useAuth();
+  const { startTutorial } = useTutorial();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -150,6 +152,19 @@ const Navbar: React.FC = () => {
                     {getRoleBadge()}
                   </div>
                 </div>
+
+                {/* Help Button */}
+                <button
+                  onClick={startTutorial}
+                  className="help-button flex items-center space-x-2 bg-yellow-400 text-gray-800 hover:bg-yellow-500 px-5 py-2.5 rounded-xl transition-all duration-300 font-bold shadow-md hover:shadow-lg"
+                  aria-label="Help"
+                  title="Start Tutorial"
+                >
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                  </svg>
+                  <span>Help</span>
+                </button>
 
                 {/* Logout Button */}
                 <button

@@ -1,14 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import Joyride, { STATUS } from 'react-joyride';
+import type { CallBackProps } from 'react-joyride';
 import { getHomeworkById, updateHomework, type Homework } from '../firebase/firestore';
 import { useAuth } from '../context/AuthContext';
+import { useTutorial } from '../context/TutorialContext';
 import { formatDate, isLate, isDueTomorrow } from '../utils/helpers';
 import AssignmentChat from '../components/AssignmentChat';
+import { studentTutorialSteps, joyrideStyles, joyrideLocale } from '../utils/tutorialSteps';
 
 const HomeworkDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { userData } = useAuth();
+  const { runTutorial, stopTutorial, tutorialStep } = useTutorial();
   const [homework, setHomework] = useState<Homework | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -39,6 +44,13 @@ const HomeworkDetail: React.FC = () => {
       setHomework({ ...homework, studentCompletions: updatedCompletions });
     } catch (error) {
       console.error('Error marking homework as complete:', error);
+    }
+  };
+
+  const handleJoyrideCallback = (data: CallBackProps) => {
+    const { status } = data;
+    if ([STATUS.FINISHED, STATUS.SKIPPED].includes(status as any)) {
+      stopTutorial();
     }
   };
 
@@ -81,6 +93,20 @@ const HomeworkDetail: React.FC = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      {/* Tutorial - Continue from step 7 if coming from tutorial */}
+      {runTutorial && tutorialStep === 7 && (
+        <Joyride
+          steps={studentTutorialSteps.slice(7)}
+          run={runTutorial}
+          continuous
+          showProgress
+          showSkipButton
+          locale={joyrideLocale}
+          styles={joyrideStyles}
+          callback={handleJoyrideCallback}
+        />
+      )}
+
       <button
         onClick={() => navigate(-1)}
         className="mb-6 text-blue-600 hover:text-blue-800 flex items-center"
@@ -181,7 +207,7 @@ const HomeworkDetail: React.FC = () => {
             {hasSubmitted ? (
               <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg">
                 <p className="font-semibold">You have submitted this {homework.type}</p>
-                {homework.submissions[userData.uid].grade !== undefined && (
+                {homework.submissions?.[userData.uid]?.grade !== undefined && (
                   <p className="text-sm mt-1">
                     Score: {homework.submissions[userData.uid].grade}/{homework.submissions[userData.uid].maxGrade}
                   </p>

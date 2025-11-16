@@ -189,7 +189,7 @@ export default function AssignmentChat({
             <>
               <button
                 onClick={() => setShowAiChat(!showAiChat)}
-                className={`px-4 py-2 rounded-lg transition-colors text-sm ${
+                className={`ai-help-button px-4 py-2 rounded-lg transition-colors text-sm ${
                   showAiChat
                     ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                     : 'bg-purple-600 text-white hover:bg-purple-700'
@@ -203,7 +203,7 @@ export default function AssignmentChat({
             <button
               onClick={handleSummarize}
               disabled={loading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors text-sm"
+              className="summarize-button px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors text-sm"
             >
               📊 Summarize
             </button>

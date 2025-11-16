@@ -50,3 +50,6 @@ build/
 # Testing
 coverage/
 .nyc_output/
+
+# Cloudflare Worker (déployé séparément)
+cloudflare-worker/

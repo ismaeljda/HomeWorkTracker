@@ -4,7 +4,6 @@ import { useHomeworks } from '../hooks/useHomeworks';
 import {
   getAllClasses,
   getTeacherSubjects,
-  type Class,
   type Subject,
   addHomework,
   updateHomework,
@@ -27,7 +26,6 @@ const DashboardProf: React.FC = () => {
   });
 
   const [activeTab, setActiveTab] = useState<'homeworks' | 'classes'>('homeworks');
-  const [classes, setClasses] = useState<Class[]>([]);
   const [subjects, setSubjects] = useState<SubjectWithClass[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSubject, setSelectedSubject] = useState('');
@@ -65,7 +63,6 @@ const DashboardProf: React.FC = () => {
           };
         });
 
-        setClasses(classesData);
         setSubjects(subjectsWithClass);
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -225,7 +222,7 @@ const DashboardProf: React.FC = () => {
         type: homework.type || 'homework',
         locationType: homework.locationType || 'online',
         subjectId: homework.subjectId,
-        classId: homework.classId,
+        classId: (homework as any).classId || '',
         description: homework.description,
         deadline: homework.deadline.toDate().toISOString().slice(0, 16),
         duration: homework.duration || 0,

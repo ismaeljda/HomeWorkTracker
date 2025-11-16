@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { TutorialProvider } from './context/TutorialContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 import Login from './pages/Login';
@@ -41,7 +42,8 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <div className="min-h-screen bg-gray-100">
+        <TutorialProvider>
+          <div className="min-h-screen bg-gray-100">
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
@@ -216,7 +218,8 @@ function App() {
               }
             />
           </Routes>
-        </div>
+          </div>
+        </TutorialProvider>
       </AuthProvider>
     </Router>
   );

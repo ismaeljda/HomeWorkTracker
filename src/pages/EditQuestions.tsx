@@ -56,7 +56,7 @@ const EditQuestions: React.FC = () => {
       question: questionForm.question,
       options: questionForm.type === 'mcq' ? questionForm.options.filter(o => o.trim()) : undefined,
       correctAnswer: questionForm.type === 'true-false'
-        ? questionForm.correctAnswer === 1
+        ? (questionForm.correctAnswer === 1)
         : questionForm.type === 'mcq'
         ? questionForm.correctAnswer
         : undefined,

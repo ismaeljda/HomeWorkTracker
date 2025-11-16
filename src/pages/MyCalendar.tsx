@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { getStudentSubjects, getTeacherSubjects, getAllHomeworks, type Homework, type Subject, type CourseSchedule } from '../firebase/firestore';
 import { Link } from 'react-router-dom';
-import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 
 type ViewMode = 'month' | 'week';
@@ -158,7 +158,7 @@ const MyCalendar: React.FC = () => {
            date.getFullYear() === today.getFullYear();
   };
 
-  const getScheduleForDay = (date: Date, dayOfWeek: number) => {
+  const getScheduleForDay = (dayOfWeek: number) => {
     const schedules: (CourseSchedule & { subject: Subject })[] = [];
     
     // Adjust dayOfWeek: Monday = 1, Sunday = 0 => Monday = 1, Sunday = 7
@@ -422,7 +422,7 @@ const MyCalendar: React.FC = () => {
                 const dayHomeworks = getHomeworksForDate(date);
                 const today = isToday(date);
                 const dayOfWeek = date.getDay();
-                const daySchedule = getScheduleForDay(date, dayOfWeek);
+                const daySchedule = getScheduleForDay(dayOfWeek);
 
                 return (
                   <div

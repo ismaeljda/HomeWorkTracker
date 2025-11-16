@@ -8,7 +8,6 @@ import {
   deleteDoc,
   query,
   where,
-  orderBy,
   Timestamp,
   QueryConstraint
 } from 'firebase/firestore';
@@ -67,7 +66,7 @@ export interface Question {
   type: 'mcq' | 'true-false' | 'open-ended';
   question: string;
   options?: string[]; // For MCQ
-  correctAnswer?: string | number; // For MCQ (index) or true-false (true/false)
+  correctAnswer?: string | number | boolean; // For MCQ (index) or true-false (true/false)
   points: number;
 }
 

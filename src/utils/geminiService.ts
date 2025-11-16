@@ -1,5 +1,5 @@
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
-const API_URL = 'https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent';
+// Cloudflare Worker URL
+const WORKER_URL = 'https://gemini-proxy.ismaelsall526.workers.dev';
 
 export interface ChatMessage {
   id?: string;
@@ -10,69 +10,41 @@ export interface ChatMessage {
   timestamp: Date;
 }
 
-async function callGeminiAPI(prompt: string): Promise<string> {
-  const response = await fetch(`${API_URL}?key=${API_KEY}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      contents: [{
-        parts: [{
-          text: prompt
-        }]
-      }]
-    })
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(`API Error: ${JSON.stringify(error)}`);
-  }
-
-  const data = await response.json();
-  return data.candidates[0].content.parts[0].text;
-}
-
 export async function getAIHint(
   assignmentTitle: string,
   assignmentDescription: string,
   studentQuestion: string,
   chatHistory: ChatMessage[]
 ): Promise<string> {
-  const systemPrompt = `You are an educational AI assistant helping students with their homework. Your role is to:
-- Guide students with hints and methodologies
-- Ask leading questions to help them think critically
-- NEVER provide direct answers or solutions
-- If a student asks for the answer directly, redirect them with guiding questions
-- Focus on teaching concepts and problem-solving approaches
-- Be encouraging and supportive
-
-Assignment: ${assignmentTitle}
-Description: ${assignmentDescription}
-
-If the student asks for the complete answer, respond with something like:
-"I can't give you the answer directly, but let me help you figure it out! What part are you stuck on?"
-`;
-
-  const historyContext = chatHistory
-    .filter(msg => msg.senderType !== 'ai')
-    .slice(-5)
-    .map(msg => `${msg.senderType === 'student' ? 'Student' : 'Teacher'}: ${msg.text}`)
-    .join('\n');
-
-  const prompt = `${systemPrompt}
-
-Recent conversation:
-${historyContext}
-
-Student's current question: ${studentQuestion}
-
-Provide a helpful hint or guidance (2-3 sentences max):`;
-
   try {
-    console.log('API Key exists:', !!API_KEY);
-    return await callGeminiAPI(prompt);
+    const conversationHistory = chatHistory.map(msg => ({
+      isUser: msg.senderType !== 'ai',
+      message: msg.text
+    }));
+
+    conversationHistory.push({
+      isUser: true,
+      message: studentQuestion
+    });
+
+    const response = await fetch(`${WORKER_URL}/generate-hint`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        assignmentTitle,
+        assignmentDescription,
+        conversationHistory
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Worker error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.message || "I'm having trouble connecting right now. Please try again in a moment!";
   } catch (error) {
     console.error('Error getting AI hint:', error);
     return "I'm having trouble connecting right now. Please try again in a moment!";
@@ -80,7 +52,7 @@ Provide a helpful hint or guidance (2-3 sentences max):`;
 }
 
 export async function summarizeDiscussion(
-  assignmentTitle: string,
+  _assignmentTitle: string,
   messages: ChatMessage[]
 ): Promise<{
   mainDifficulties: string[];
@@ -88,44 +60,67 @@ export async function summarizeDiscussion(
   helpfulExplanations: string[];
   unansweredQuestions: string[];
 }> {
-  const conversationText = messages
-    .map(msg => {
-      const sender = msg.senderType === 'ai' ? 'AI Assistant' :
-                     msg.senderType === 'teacher' ? 'Teacher' : 'Student';
-      return `${sender}: ${msg.text}`;
-    })
-    .join('\n');
-
-  const prompt = `Analyze this discussion about the assignment "${assignmentTitle}":
-
-${conversationText}
-
-Provide a structured summary in the following JSON format:
-{
-  "mainDifficulties": ["difficulty 1", "difficulty 2"],
-  "keyConcepts": ["concept 1", "concept 2"],
-  "helpfulExplanations": ["explanation 1", "explanation 2"],
-  "unansweredQuestions": ["question 1", "question 2"]
-}
-
-Focus on educational insights. If a category is empty, use an empty array.`;
-
   try {
-    const text = await callGeminiAPI(prompt);
+    const formattedMessages = messages.map(msg => ({
+      userName: msg.senderType === 'ai' ? 'AI Assistant' :
+                msg.senderType === 'teacher' ? 'Professeur' :
+                msg.senderName || 'Élève',
+      message: msg.text
+    }));
 
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      return JSON.parse(jsonMatch[0]);
+    const response = await fetch(`${WORKER_URL}/summarize`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        messages: formattedMessages
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Worker error: ${response.status}`);
     }
 
+    const data = await response.json();
+    const summaryText = data.summary || '';
+
     return {
-      mainDifficulties: [],
-      keyConcepts: [],
-      helpfulExplanations: [],
-      unansweredQuestions: []
+      mainDifficulties: extractListItems(summaryText, 'difficultés|problèmes|points difficiles'),
+      keyConcepts: extractListItems(summaryText, 'concepts|notions|points clés'),
+      helpfulExplanations: extractListItems(summaryText, 'explications|solutions|réponses'),
+      unansweredQuestions: extractListItems(summaryText, 'questions sans réponse|questions restantes')
     };
   } catch (error) {
     console.error('Error summarizing discussion:', error);
     throw new Error('Failed to generate summary');
   }
+}
+
+function extractListItems(text: string, keywords: string): string[] {
+  const lines = text.split('\n');
+  const items: string[] = [];
+
+  let inSection = false;
+  const keywordRegex = new RegExp(keywords, 'i');
+
+  for (const line of lines) {
+    if (keywordRegex.test(line)) {
+      inSection = true;
+      continue;
+    }
+
+    if (inSection) {
+      const match = line.match(/^[\s\-\*•]\s*(.+)/);
+      if (match && match[1].trim()) {
+        items.push(match[1].trim());
+      } else if (line.trim() && !line.match(/^#+/)) {
+        items.push(line.trim());
+      } else if (line.trim() === '') {
+        inSection = false;
+      }
+    }
+  }
+
+  return items.slice(0, 5);
 }

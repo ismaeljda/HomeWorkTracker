@@ -19,7 +19,6 @@ const TakeExam: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
-  const [startTime] = useState(new Date());
 
   useEffect(() => {
     const fetchHomework = async () => {
@@ -104,7 +103,7 @@ const TakeExam: React.FC = () => {
 
         if (q.type === 'mcq' || q.type === 'true-false') {
           if (q.type === 'true-false') {
-            const correctBool = q.correctAnswer === true || q.correctAnswer === 1;
+            const correctBool = typeof q.correctAnswer === 'boolean' ? q.correctAnswer : q.correctAnswer === 1;
             const userBool = userAnswer === true || userAnswer === 1 || userAnswer === 'true';
             isCorrect = correctBool === userBool;
           } else {
@@ -125,10 +124,6 @@ const TakeExam: React.FC = () => {
       const autoGradedPoints = studentAnswers
         .filter(a => a.points !== undefined)
         .reduce((sum, a) => sum + (a.points || 0), 0);
-
-      const maxAutoGradedPoints = (homework.questions || [])
-        .filter(q => q.type !== 'open-ended')
-        .reduce((sum, q) => sum + q.points, 0);
 
       const totalMaxPoints = (homework.questions || [])
         .reduce((sum, q) => sum + q.points, 0);

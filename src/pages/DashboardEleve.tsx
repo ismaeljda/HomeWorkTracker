@@ -1,12 +1,19 @@
 import React, { useState, useEffect } from 'react';
+import Joyride, { STATUS } from 'react-joyride';
+import type { CallBackProps } from 'react-joyride';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTutorial } from '../context/TutorialContext';
 import { getStudentSubjects, getUserById, getAllHomeworks, type Subject, updateHomework } from '../firebase/firestore';
 import HomeworkCard from '../components/HomeworkCard';
 import FilterBar from '../components/FilterBar';
 import { filterHomeworks } from '../utils/helpers';
+import { studentTutorialSteps, joyrideStyles, joyrideLocale } from '../utils/tutorialSteps';
 
 const DashboardEleve: React.FC = () => {
   const { userData } = useAuth();
+  const { runTutorial, stopTutorial, setTutorialStep } = useTutorial();
+  const navigate = useNavigate();
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [allHomeworks, setAllHomeworks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -135,13 +142,41 @@ const DashboardEleve: React.FC = () => {
     );
   }
 
+  const handleJoyrideCallback = (data: CallBackProps) => {
+    const { status, index, action } = data;
+
+    // If moving from step 6 (index 6) to step 7 (index 7) and there's a homework available
+    if (index === 6 && action === 'next' && filteredHomeworks.length > 0) {
+      // Save tutorial progress and navigate to the first homework detail page
+      const firstHomework = filteredHomeworks[0];
+      setTutorialStep(7);
+      navigate(`/homework/${firstHomework.id}`);
+    }
+
+    if ([STATUS.FINISHED, STATUS.SKIPPED].includes(status as any)) {
+      stopTutorial();
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Tutorial */}
+      <Joyride
+        steps={studentTutorialSteps}
+        run={runTutorial}
+        continuous
+        showProgress
+        showSkipButton
+        locale={joyrideLocale}
+        styles={joyrideStyles}
+        callback={handleJoyrideCallback}
+      />
+
       {/* Statistics Section - Separate Header */}
       <div className="bg-white border-b shadow-sm">
         <div className="container mx-auto px-4 py-8">
           <h1 className="text-3xl font-bold mb-6 text-gray-800">My Homeworks</h1>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 stats-cards">
             <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200 rounded-2xl p-8 hover:shadow-lg transition-all duration-200 hover:border-blue-300">
               <div className="flex flex-col items-center justify-center text-center">
                 <div className="w-14 h-14 bg-blue-500 rounded-xl flex items-center justify-center mb-4">
@@ -185,20 +220,22 @@ const DashboardEleve: React.FC = () => {
       {/* Main Content Section */}
       <div className="container mx-auto px-4 py-8">
 
-      <FilterBar
-        searchTerm={searchTerm}
-        onSearchChange={setSearchTerm}
-        selectedSubject={selectedSubject}
-        onSubjectChange={setSelectedSubject}
-        selectedStatus={selectedStatus}
-        onStatusChange={setSelectedStatus}
-        selectedType={selectedType}
-        onTypeChange={setSelectedType}
-        subjects={subjects}
-        showSubjectFilter
-        showStatusFilter
-        showTypeFilter
-      />
+      <div className="filter-bar">
+        <FilterBar
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          selectedSubject={selectedSubject}
+          onSubjectChange={setSelectedSubject}
+          selectedStatus={selectedStatus}
+          onStatusChange={setSelectedStatus}
+          selectedType={selectedType}
+          onTypeChange={setSelectedType}
+          subjects={subjects}
+          showSubjectFilter
+          showStatusFilter
+          showTypeFilter
+        />
+      </div>
 
       {filteredHomeworks.length === 0 ? (
         <div className="text-center py-12 bg-white rounded-lg shadow">

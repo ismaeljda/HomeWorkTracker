@@ -18,7 +18,6 @@ interface HomeworkCardProps {
 
 const HomeworkCard: React.FC<HomeworkCardProps> = ({
   homework,
-  onMarkComplete,
   onEdit,
   onDelete,
   onToggleAvailability,
@@ -34,8 +33,8 @@ const HomeworkCard: React.FC<HomeworkCardProps> = ({
   // Calculate time remaining
   const getTimeRemaining = () => {
     const now = new Date();
-    const deadline = homework.deadline?.toDate ? homework.deadline.toDate() : new Date(homework.deadline);
-    
+    const deadline = homework.deadline?.toDate ? homework.deadline.toDate() : new Date(homework.deadline as any);
+
     if (!deadline || isNaN(deadline.getTime())) return 'N/A';
     
     const diffMs = deadline.getTime() - now.getTime();
@@ -95,10 +94,9 @@ const HomeworkCard: React.FC<HomeworkCardProps> = ({
   const completedStudents = homework.studentCompletions
     ? Object.values(homework.studentCompletions).filter(completed => completed).length
     : 0;
-  const completionPercentage = totalStudents > 0 ? Math.round((completedStudents / totalStudents) * 100) : 0;
 
   return (
-    <div className={`relative rounded-xl transition-all duration-300 overflow-hidden hover:-translate-y-1 bg-white border border-gray-200 ${
+    <div className={`homework-card relative rounded-xl transition-all duration-300 overflow-hidden hover:-translate-y-1 bg-white border border-gray-200 ${
       homework.type === 'exam' ? 'shadow-[0_4px_20px_rgba(239,68,68,0.3)] hover:shadow-[0_8px_30px_rgba(239,68,68,0.4)]' :
       homework.type === 'quiz' ? 'shadow-[0_4px_20px_rgba(168,85,247,0.3)] hover:shadow-[0_8px_30px_rgba(168,85,247,0.4)]' :
       'shadow-[0_4px_20px_rgba(59,130,246,0.3)] hover:shadow-[0_8px_30px_rgba(59,130,246,0.4)]'
@@ -136,7 +134,7 @@ const HomeworkCard: React.FC<HomeworkCardProps> = ({
                 </span>
               )}
 
-              {role === 'eleve' && homework.status === 'complete' && (
+              {role === 'eleve' && (homework as any).status === 'complete' && (
                 <span className="inline-flex items-center gap-2 bg-green-50 text-green-700 px-3 py-2 rounded-lg font-semibold text-sm border border-green-200">
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
@@ -146,7 +144,7 @@ const HomeworkCard: React.FC<HomeworkCardProps> = ({
               )}
 
               {late && (
-                <span className="inline-flex items-center gap-2 bg-red-50 text-red-700 px-3 py-2 rounded-lg font-bold text-sm border border-red-200 animate-pulse">
+                <span className="badge inline-flex items-center gap-2 bg-red-50 text-red-700 px-3 py-2 rounded-lg font-bold text-sm border border-red-200 animate-pulse">
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                   </svg>
@@ -155,7 +153,7 @@ const HomeworkCard: React.FC<HomeworkCardProps> = ({
               )}
 
               {!late && dueTomorrow && (
-                <span className="inline-flex items-center gap-2 bg-yellow-50 text-yellow-700 px-3 py-2 rounded-lg font-bold text-sm border border-yellow-200">
+                <span className="badge inline-flex items-center gap-2 bg-yellow-50 text-yellow-700 px-3 py-2 rounded-lg font-bold text-sm border border-yellow-200">
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                   </svg>
@@ -258,7 +256,7 @@ const HomeworkCard: React.FC<HomeworkCardProps> = ({
             {/* Exam/Quiz status for students */}
             {role === 'eleve' && (homework.type === 'exam' || homework.type === 'quiz') && homework.locationType === 'online' && (() => {
               const now = new Date();
-              const deadlineDate = homework.deadline?.toDate ? homework.deadline.toDate() : new Date(homework.deadline);
+              const deadlineDate = homework.deadline?.toDate ? homework.deadline.toDate() : new Date(homework.deadline as any);
               const isManuallyAvailable = homework.isAvailable === true;
               const isDeadlineReached = now >= deadlineDate;
               const canTakeExam = isManuallyAvailable || isDeadlineReached;
