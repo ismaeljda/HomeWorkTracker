@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { collection, addDoc, query, orderBy, onSnapshot, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, query, orderBy, onSnapshot, Timestamp, deleteDoc, getDocs } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { useAuth } from '../context/AuthContext';
 import { getAIHint, summarizeDiscussion, type ChatMessage } from '../utils/geminiService';
@@ -176,6 +176,29 @@ export default function AssignmentChat({
     }
   };
 
+  const handleClearAiChat = async () => {
+    if (!currentUser || isTeacher) return;
+
+    if (!confirm('Are you sure you want to clear your AI conversation? This cannot be undone.')) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const aiMessagesRef = collection(db, 'assignments', assignmentId, 'aiChats', currentUser.uid, 'messages');
+      const snapshot = await getDocs(aiMessagesRef);
+
+      const deletePromises = snapshot.docs.map(doc => deleteDoc(doc.ref));
+      await Promise.all(deletePromises);
+
+    } catch (error) {
+      console.error('Error clearing AI chat:', error);
+      alert('Failed to clear conversation. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const currentMessages = showAiChat ? aiMessages : publicMessages;
 
   return (
@@ -197,6 +220,15 @@ export default function AssignmentChat({
               >
                 {showAiChat ? '👥 Public Chat' : '🤖 AI Help'}
               </button>
+              {showAiChat && aiMessages.length > 0 && (
+                <button
+                  onClick={handleClearAiChat}
+                  disabled={loading}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors text-sm"
+                >
+                  🗑️ Clear
+                </button>
+              )}
             </>
           )}
           {!showAiChat && publicMessages.length > 0 && (
