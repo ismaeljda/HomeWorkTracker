@@ -250,7 +250,8 @@ const DashboardAdmin: React.FC = () => {
       email: user.email,
       role: user.role,
       classId: user.classId || '',
-      subjectIds: user.subjectIds || []
+      subjectIds: user.subjectIds || [],
+      defaultPassword: 'password123'
     });
     setShowUserForm(true);
   };
