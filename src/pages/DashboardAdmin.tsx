@@ -52,8 +52,12 @@ const DashboardAdmin: React.FC = () => {
     email: '',
     role: 'eleve' as 'admin' | 'prof' | 'eleve',
     classId: '',
-    subjectIds: [] as string[]
+    subjectIds: [] as string[],
+    defaultPassword: 'password123'
   });
+
+  const [activationCode, setActivationCode] = useState<string | null>(null);
+  const [showActivationModal, setShowActivationModal] = useState(false);
 
   const [scheduleFormData, setScheduleFormData] = useState({
     subjectId: '',
@@ -182,32 +186,60 @@ const DashboardAdmin: React.FC = () => {
     }));
   };
 
+  // Generate a random activation code
+  const generateActivationCode = () => {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let code = '';
+    for (let i = 0; i < 8; i++) {
+      code += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    return code;
+  };
+
   // Users Management
   const handleUserSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const userData = {
-        name: userFormData.name,
-        email: userFormData.email,
-        role: userFormData.role,
-        classId: userFormData.classId,
-        ...(userFormData.role === 'eleve' && { subjectIds: userFormData.subjectIds })
-      };
-
       if (editingUserId) {
+        // Update existing user
+        const userData = {
+          name: userFormData.name,
+          email: userFormData.email,
+          role: userFormData.role,
+          classId: userFormData.classId,
+          ...(userFormData.role === 'eleve' && { subjectIds: userFormData.subjectIds })
+        };
         await updateDoc(doc(db, 'users', editingUserId), userData);
-      } else {
-        // For creating new users, you'd need Firebase Auth integration
-        alert('Creating new users requires Firebase Auth setup. Please use the signup page.');
-        return;
-      }
 
-      setShowUserForm(false);
-      setEditingUserId(null);
-      setUserFormData({ name: '', email: '', role: 'eleve', classId: '', subjectIds: [] });
-      fetchData();
+        setShowUserForm(false);
+        setEditingUserId(null);
+        setUserFormData({ name: '', email: '', role: 'eleve', classId: '', subjectIds: [], defaultPassword: 'password123' });
+        fetchData();
+      } else {
+        // Create new user with activation code
+        const code = generateActivationCode();
+        const activationData = {
+          code: code,
+          email: userFormData.email,
+          name: userFormData.name,
+          role: userFormData.role,
+          classId: userFormData.classId,
+          subjectIds: userFormData.role === 'eleve' ? userFormData.subjectIds : [],
+          defaultPassword: userFormData.defaultPassword,
+          used: false,
+          createdAt: new Date()
+        };
+
+        await addDoc(collection(db, 'activationCodes'), activationData);
+
+        setActivationCode(code);
+        setShowActivationModal(true);
+        setShowUserForm(false);
+        setUserFormData({ name: '', email: '', role: 'eleve', classId: '', subjectIds: [], defaultPassword: 'password123' });
+      }
     } catch (error) {
       console.error('Error saving user:', error);
+      alert('Error creating user. Please try again.');
     }
   };
 
@@ -643,20 +675,105 @@ const DashboardAdmin: React.FC = () => {
         </div>
       )}
 
+      {/* Activation Code Modal */}
+      {showActivationModal && activationCode && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full mx-4">
+            <div className="text-center">
+              <div className="bg-green-100 rounded-full p-4 inline-block mb-4">
+                <svg className="w-12 h-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h3 className="text-2xl font-bold text-gray-800 mb-2">User Created Successfully!</h3>
+              <p className="text-gray-600 mb-6">Share this activation code with the user:</p>
+
+              <div className="bg-indigo-50 border-2 border-indigo-300 rounded-lg p-6 mb-4">
+                <p className="text-sm text-gray-600 mb-2">Activation Code</p>
+                <p className="text-4xl font-bold text-indigo-600 tracking-widest font-mono">
+                  {activationCode}
+                </p>
+              </div>
+
+              <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4 mb-6">
+                <p className="text-sm text-gray-600 mb-2">Default Password</p>
+                <p className="text-2xl font-bold text-blue-600 font-mono">
+                  password123
+                </p>
+              </div>
+
+              <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 text-left">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-yellow-700">
+                      <strong>Important:</strong> The user will need this code to complete their registration. Make sure to save it!
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(activationCode);
+                    alert('Code copied to clipboard!');
+                  }}
+                  className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg transition font-semibold"
+                >
+                  Copy Code
+                </button>
+                <button
+                  onClick={() => {
+                    setShowActivationModal(false);
+                    setActivationCode(null);
+                  }}
+                  className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-3 rounded-lg transition font-semibold"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* USERS TAB */}
       {activeTab === 'users' && (
         <div>
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-3xl font-bold text-gray-800">Manage Users</h2>
-            <p className="text-sm text-gray-600">
-              ℹ️ New users must sign up via the signup page. You can edit existing users here.
-            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={fetchData}
+                className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-lg transition font-semibold shadow-md hover:shadow-lg flex items-center gap-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Refresh
+              </button>
+              <button
+                onClick={() => {
+                  setShowUserForm(!showUserForm);
+                  setEditingUserId(null);
+                  setUserFormData({ name: '', email: '', role: 'eleve', classId: '', subjectIds: [], defaultPassword: 'password123' });
+                }}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition font-semibold shadow-md hover:shadow-lg"
+              >
+                {showUserForm ? '✕ Cancel' : '+ Add New User'}
+              </button>
+            </div>
           </div>
 
           {showUserForm && (
             <div className="bg-white rounded-lg shadow-lg p-6 mb-6 border-t-4 border-blue-600">
               <h3 className="text-2xl font-bold mb-4 text-gray-800">
-                Edit User
+                {editingUserId ? 'Edit User' : 'Add New User'}
               </h3>
               <form onSubmit={handleUserSubmit} className="space-y-4">
                 <div>
@@ -684,10 +801,12 @@ const DashboardAdmin: React.FC = () => {
                       setUserFormData({ ...userFormData, email: e.target.value })
                     }
                     required
-                    disabled
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
+                    disabled={!!editingUserId}
+                    className={`w-full px-4 py-2 border border-gray-300 rounded-lg ${
+                      editingUserId ? 'bg-gray-100 cursor-not-allowed' : 'focus:outline-none focus:ring-2 focus:ring-blue-500'
+                    }`}
                   />
-                  <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
+                  {editingUserId && <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -759,7 +878,7 @@ const DashboardAdmin: React.FC = () => {
                     type="submit"
                     className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition font-semibold"
                   >
-                    Update User
+                    {editingUserId ? 'Update User' : 'Create User & Generate Code'}
                   </button>
                   <button
                     type="button"

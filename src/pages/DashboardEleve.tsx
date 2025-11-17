@@ -24,10 +24,16 @@ const DashboardEleve: React.FC = () => {
   const [selectedType, setSelectedType] = useState('');
 
   const fetchData = async () => {
-    if (!userData?.uid) return;
+    if (!userData?.uid) {
+      console.log('No userData or uid:', userData);
+      return;
+    }
     try {
       setLoading(true);
+      console.log('Fetching subjects for student:', userData.uid);
+      console.log('User data:', userData);
       const studentSubjects = await getStudentSubjects(userData.uid);
+      console.log('Found subjects:', studentSubjects);
       setSubjects(studentSubjects);
 
       // Fetch teacher names

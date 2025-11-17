@@ -2,12 +2,16 @@ import React, { useState } from 'react';
 import { initializeDatabase } from '../scripts/initializeData';
 import { addHomeworksData } from '../scripts/addHomeworksData';
 import { addSchedulesToCourses } from '../scripts/addSchedulesToCourses';
+import { addMathHomeworks } from '../scripts/addMathHomeworks';
+import { addScheduleItems } from '../scripts/addScheduleItems';
 
 const InitializeDB: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [homeworkResult, setHomeworkResult] = useState<any>(null);
   const [scheduleResult, setScheduleResult] = useState<any>(null);
+  const [mathResult, setMathResult] = useState<any>(null);
+  const [scheduleItemsResult, setScheduleItemsResult] = useState<any>(null);
 
   const handleInitialize = async () => {
     if (!window.confirm('⚠️ This will create sample data in your database. Continue?')) {
@@ -46,6 +50,32 @@ const InitializeDB: React.FC = () => {
 
     const res = await addSchedulesToCourses();
     setScheduleResult(res);
+    setLoading(false);
+  };
+
+  const handleAddMathHomeworks = async () => {
+    if (!window.confirm('📐 This will add 5 detailed math homework assignments (one per day). Continue?')) {
+      return;
+    }
+
+    setLoading(true);
+    setMathResult(null);
+
+    const res = await addMathHomeworks();
+    setMathResult(res);
+    setLoading(false);
+  };
+
+  const handleAddScheduleItems = async () => {
+    if (!window.confirm('📅 This will add additional schedule items to courses. Continue?')) {
+      return;
+    }
+
+    setLoading(true);
+    setScheduleItemsResult(null);
+
+    const res = await addScheduleItems();
+    setScheduleItemsResult(res);
     setLoading(false);
   };
 
@@ -184,7 +214,43 @@ const InitializeDB: React.FC = () => {
                 Adding Schedules...
               </span>
             ) : (
-              '🕐 Add Course Schedules (Optional)'
+              '🕐 Add Course Schedules (Step 3)'
+            )}
+          </button>
+
+          <button
+            onClick={handleAddMathHomeworks}
+            disabled={loading}
+            className="w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white font-semibold py-4 px-6 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+          >
+            {loading ? (
+              <span className="flex items-center justify-center">
+                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Adding Math Homeworks...
+              </span>
+            ) : (
+              '📐 Add Detailed Math Homeworks (Optional)'
+            )}
+          </button>
+
+          <button
+            onClick={handleAddScheduleItems}
+            disabled={loading}
+            className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white font-semibold py-4 px-6 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+          >
+            {loading ? (
+              <span className="flex items-center justify-center">
+                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Adding Schedule Items...
+              </span>
+            ) : (
+              '📅 Add Additional Schedule Items (Optional)'
             )}
           </button>
         </div>
@@ -235,6 +301,56 @@ const InitializeDB: React.FC = () => {
                     <p>✓ Subjects updated: {scheduleResult.summary.updated}</p>
                     <p>✓ Subjects skipped: {scheduleResult.summary.skipped}</p>
                     <p>✓ Total subjects: {scheduleResult.summary.total}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {mathResult && (
+          <div className={`rounded-lg p-6 mb-6 mt-6 ${mathResult.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+            <div className="flex items-start space-x-3">
+              {mathResult.success ? (
+                <svg className="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+              ) : (
+                <svg className="w-6 h-6 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              )}
+              <div className={mathResult.success ? 'text-green-800' : 'text-red-800'}>
+                <p className="font-semibold mb-2">{mathResult.message}</p>
+                {mathResult.success && mathResult.count && (
+                  <div className="text-sm space-y-1">
+                    <p>✓ Created {mathResult.count} detailed math assignments</p>
+                    <p>✓ One assignment per day for the next 5 days</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {scheduleItemsResult && (
+          <div className={`rounded-lg p-6 mb-6 mt-6 ${scheduleItemsResult.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+            <div className="flex items-start space-x-3">
+              {scheduleItemsResult.success ? (
+                <svg className="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+              ) : (
+                <svg className="w-6 h-6 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              )}
+              <div className={scheduleItemsResult.success ? 'text-green-800' : 'text-red-800'}>
+                <p className="font-semibold mb-2">{scheduleItemsResult.message}</p>
+                {scheduleItemsResult.success && scheduleItemsResult.summary && (
+                  <div className="text-sm space-y-1">
+                    <p>✓ Subjects updated: {scheduleItemsResult.summary.updated}</p>
+                    <p>✓ Subjects skipped: {scheduleItemsResult.summary.skipped}</p>
                   </div>
                 )}
               </div>

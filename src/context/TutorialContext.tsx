@@ -32,14 +32,14 @@ export const TutorialProvider: React.FC<TutorialProviderProps> = ({ children }) 
 
   // Check if user has seen the tutorial
   useEffect(() => {
-    if (userData?.uid) {
+    if (userData?.uid && userData?.role === 'eleve') {
       const storageKey = `tutorial_seen_${userData.uid}_${userData.role}`;
       const seen = localStorage.getItem(storageKey);
 
       if (!seen) {
-        // First time user - don't show automatically
+        // First time student - show automatically
         setHasSeenTutorial(false);
-        setRunTutorial(false);
+        setRunTutorial(true);
       } else {
         setHasSeenTutorial(true);
       }

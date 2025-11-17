@@ -19,30 +19,30 @@ const MyCalendar: React.FC = () => {
   const getTypeColors = (type?: 'homework' | 'exam' | 'quiz') => {
     switch (type) {
       case 'exam':
-        return { 
-          gradient: 'from-red-500 to-pink-500', 
+        return {
+          gradient: 'from-red-500 to-pink-500',
           bgLight: 'bg-red-50',
           border: 'border-red-200',
           text: 'text-red-700',
-          icon: '📝',
+          bg: 'bg-red-500',
           label: 'Exam'
         };
       case 'quiz':
-        return { 
+        return {
           gradient: 'from-purple-500 to-indigo-500',
           bgLight: 'bg-purple-50',
           border: 'border-purple-200',
           text: 'text-purple-700',
-          icon: '❓',
+          bg: 'bg-purple-500',
           label: 'Quiz'
         };
       default:
-        return { 
+        return {
           gradient: 'from-blue-500 to-cyan-500',
           bgLight: 'bg-blue-50',
           border: 'border-blue-200',
           text: 'text-blue-700',
-          icon: '📚',
+          bg: 'bg-blue-500',
           label: 'Homework'
         };
     }
@@ -50,18 +50,25 @@ const MyCalendar: React.FC = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!userData?.uid) return;
+      if (!userData?.uid) {
+        console.log('MyCalendar: No userData or uid:', userData);
+        return;
+      }
 
       try {
         setLoading(true);
         let subjectsData: Subject[] = [];
-        
+
+        console.log('MyCalendar: Fetching calendar data for user:', userData.uid, 'role:', userData.role);
+
         if (userData.role === 'eleve') {
           subjectsData = await getStudentSubjects(userData.uid);
+          console.log('MyCalendar: Student subjects found:', subjectsData);
         } else if (userData.role === 'prof') {
           subjectsData = await getTeacherSubjects(userData.uid);
+          console.log('MyCalendar: Teacher subjects found:', subjectsData);
         }
-        
+
         setSubjects(subjectsData);
 
         // Fetch homeworks for all subjects
@@ -121,7 +128,7 @@ const MyCalendar: React.FC = () => {
     startOfWeek.setDate(date.getDate() + diff);
 
     const days: Date[] = [];
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < 5; i++) { // Only Monday to Friday (5 days)
       const day = new Date(startOfWeek);
       day.setDate(startOfWeek.getDate() + i);
       days.push(day);
@@ -217,7 +224,8 @@ const MyCalendar: React.FC = () => {
 
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
                       'July', 'August', 'September', 'October', 'November', 'December'];
-  const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const dayNamesWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+  const dayNamesMonth = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   if (loading) {
     return (
@@ -231,7 +239,7 @@ const MyCalendar: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 p-4 sm:p-8">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-[1600px] mx-auto">
         {/* Enhanced Header */}
         <div className="mb-8 text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl shadow-lg mb-4">
@@ -329,7 +337,7 @@ const MyCalendar: React.FC = () => {
           <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl p-6 border border-white/20">
             {/* Day Headers */}
             <div className="grid grid-cols-7 gap-3 mb-4">
-              {dayNames.map(day => (
+              {dayNamesMonth.map(day => (
                 <div key={day} className="text-center font-bold text-gray-700 py-3 text-sm uppercase tracking-wider">
                   {day}
                 </div>
@@ -340,7 +348,7 @@ const MyCalendar: React.FC = () => {
             <div className="grid grid-cols-7 gap-3">
               {getDaysInMonth(currentDate).map((date, index) => {
                 if (!date) {
-                  return <div key={`empty-${index}`} className="min-h-[140px]" />;
+                  return <div key={`empty-${index}`} className="min-h-[160px]" />;
                 }
 
                 const dayHomeworks = getHomeworksForDate(date);
@@ -349,49 +357,70 @@ const MyCalendar: React.FC = () => {
                 return (
                   <div
                     key={index}
-                    className={`min-h-[140px] rounded-2xl p-3 transition-all duration-300 hover:scale-105 hover:shadow-2xl ${
+                    className={`min-h-[160px] rounded-xl p-3 transition-all duration-300 hover:shadow-xl border-2 ${
                       today
-                        ? 'bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 text-white shadow-xl ring-4 ring-purple-200'
+                        ? 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-lg border-indigo-600'
                         : dayHomeworks.length > 0
-                        ? 'bg-gradient-to-br from-white to-gray-50 border-2 border-gray-200 hover:border-purple-300'
-                        : 'bg-gray-50 border border-gray-200 hover:bg-white'
+                        ? 'bg-white border-indigo-200 hover:border-indigo-400'
+                        : 'bg-gray-50 border-gray-200 hover:bg-white hover:border-gray-300'
                     }`}
                   >
                     <div className="flex flex-col h-full">
-                      <div className={`text-lg font-bold mb-2 ${
-                        today 
-                          ? 'text-white' 
-                          : dayHomeworks.length > 0 
-                          ? 'text-gray-800' 
-                          : 'text-gray-500'
+                      <div className={`flex items-center justify-between mb-3 ${
+                        today ? 'text-white' : ''
                       }`}>
-                        {date.getDate()}
+                        <div className={`text-xl font-bold ${
+                          today
+                            ? 'text-white'
+                            : dayHomeworks.length > 0
+                            ? 'text-gray-800'
+                            : 'text-gray-400'
+                        }`}>
+                          {date.getDate()}
+                        </div>
+                        {dayHomeworks.length > 0 && !today && (
+                          <div className="bg-indigo-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                            {dayHomeworks.length}
+                          </div>
+                        )}
+                        {today && dayHomeworks.length > 0 && (
+                          <div className="bg-white/20 text-white text-xs font-bold px-2 py-0.5 rounded-full backdrop-blur-sm">
+                            {dayHomeworks.length}
+                          </div>
+                        )}
                       </div>
 
-                      <div className="space-y-1.5 overflow-hidden flex-1">
+                      <div className="space-y-2 overflow-hidden flex-1">
                         {dayHomeworks.slice(0, 3).map(hw => {
                           const colors = getTypeColors(hw.type);
                           return (
                             <Link
                               key={hw.id}
                               to={`/homework/${hw.id}`}
-                              className={`block text-xs px-2 py-1.5 rounded-lg font-medium transition-all ${
+                              className={`group block px-2.5 py-2 rounded-lg transition-all border-l-4 ${
                                 today
-                                  ? 'bg-white/25 hover:bg-white/40 text-white backdrop-blur-sm'
-                                  : `bg-gradient-to-r ${colors.gradient} text-white hover:shadow-md transform hover:scale-105`
+                                  ? 'bg-white/20 hover:bg-white/30 text-white backdrop-blur-sm border-white/50'
+                                  : `bg-white hover:bg-gray-50 border-l-4 shadow-sm hover:shadow-md`
                               }`}
+                              style={!today ? { borderLeftColor: colors.border.includes('red') ? '#dc2626' : colors.border.includes('purple') ? '#9333ea' : '#3b82f6' } : {}}
                               title={hw.title}
                             >
-                              <span className="flex items-center gap-1.5">
-                                <span className="text-sm">{colors.icon}</span>
-                                <span className="truncate text-xs">{hw.title}</span>
-                              </span>
+                              <div className={`text-[9px] font-bold uppercase tracking-wider mb-1 ${
+                                today ? 'text-white/90' : colors.text
+                              }`}>
+                                {colors.label}
+                              </div>
+                              <div className={`text-xs font-semibold truncate ${
+                                today ? 'text-white' : 'text-gray-900 group-hover:text-indigo-600'
+                              }`}>
+                                {hw.title}
+                              </div>
                             </Link>
                           );
                         })}
                         {dayHomeworks.length > 3 && (
-                          <div className={`text-xs font-semibold px-2 pt-1 ${
-                            today ? 'text-white' : 'text-purple-600'
+                          <div className={`text-xs font-semibold px-2 ${
+                            today ? 'text-white/80' : 'text-indigo-600'
                           }`}>
                             +{dayHomeworks.length - 3} more
                           </div>
@@ -404,20 +433,20 @@ const MyCalendar: React.FC = () => {
             </div>
           </div>
         ) : (
-          // Enhanced Week View with Timeline
-          <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl p-6 border border-white/20 overflow-x-auto">
-            <div className="flex gap-0 min-w-max">
+          // Enhanced Week View with Timeline (Monday to Friday only)
+          <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl p-6 border border-white/20">
+            <div className="flex gap-0">
               {/* Time Column */}
-              <div className="flex-shrink-0 w-20 border-r-2 border-gray-200">
+              <div className="flex-shrink-0 w-16 border-r-2 border-gray-200">
                 <div className="h-16 border-b-2 border-gray-200"></div>
                 {Array.from({ length: 10 }, (_, i) => i + 8).map(hour => (
-                  <div key={hour} className="h-16 border-b border-gray-200 flex items-start pt-1 pr-2 justify-end">
+                  <div key={hour} className="h-16 border-b border-gray-200 flex items-start pt-1 pr-1 justify-end">
                     <span className="text-xs font-semibold text-gray-600">{hour}:00</span>
                   </div>
                 ))}
               </div>
 
-              {/* Days Columns */}
+              {/* Days Columns (Monday to Friday) */}
               {getWeekDays(currentDate).map((date, index) => {
                 const dayHomeworks = getHomeworksForDate(date);
                 const today = isToday(date);
@@ -427,20 +456,20 @@ const MyCalendar: React.FC = () => {
                 return (
                   <div
                     key={index}
-                    className={`flex-1 min-w-[180px] border-r-2 border-gray-200 last:border-r-0 ${
+                    className={`flex-1 border-r-2 border-gray-200 last:border-r-0 ${
                       today ? 'bg-blue-50/30' : ''
                     }`}
                   >
                     {/* Day Header */}
-                    <div className={`h-16 border-b-2 border-gray-200 p-2 text-center sticky top-0 z-10 ${
-                      today 
-                        ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white' 
+                    <div className={`h-16 border-b-2 border-gray-200 p-1 text-center sticky top-0 z-10 ${
+                      today
+                        ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white'
                         : 'bg-gray-50'
                     }`}>
-                      <div className={`text-xs font-bold uppercase ${today ? 'text-white' : 'text-gray-600'}`}>
-                        {dayNames[index]}
+                      <div className={`text-[10px] font-bold uppercase ${today ? 'text-white' : 'text-gray-600'}`}>
+                        {dayNamesWeek[index]}
                       </div>
-                      <div className={`text-2xl font-extrabold ${today ? 'text-white' : 'text-gray-900'}`}>
+                      <div className={`text-xl font-extrabold ${today ? 'text-white' : 'text-gray-900'}`}>
                         {date.getDate()}
                       </div>
                     </div>
@@ -461,7 +490,7 @@ const MyCalendar: React.FC = () => {
                         const cancelled = isCourseCancelled(schedule, date);
                         const [startHour, startMin] = schedule.startTime.split(':').map(Number);
                         const [endHour, endMin] = schedule.endTime.split(':').map(Number);
-                        
+
                         // Calculate position (8am = 0, 9am = 64px, etc.)
                         const startMinutes = (startHour - 8) * 60 + startMin;
                         const endMinutes = (endHour - 8) * 60 + endMin;
@@ -479,8 +508,8 @@ const MyCalendar: React.FC = () => {
                                 ? 'bg-gray-200 opacity-60'
                                 : 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white hover:from-indigo-600 hover:to-purple-700'
                             }`}
-                            style={{ 
-                              top: `${top}px`, 
+                            style={{
+                              top: `${top}px`,
                               height: `${height}px`,
                               minHeight: '50px'
                             }}
@@ -494,7 +523,7 @@ const MyCalendar: React.FC = () => {
                             )}
                             <div className={cancelled ? 'opacity-40' : ''}>
                               <div className="flex items-start justify-between gap-1 mb-1">
-                                <span className="font-bold leading-tight truncate text-sm">{schedule.subject.name}</span>
+                                <span className="font-bold leading-tight text-sm line-clamp-2 break-words">{schedule.subject.name}</span>
                                 {userData?.role === 'prof' && !cancelled && (
                                   <button
                                     onClick={() => cancelCourse(schedule.subjectId, schedule.id || schedule.startTime, date)}
@@ -508,20 +537,20 @@ const MyCalendar: React.FC = () => {
                                 )}
                               </div>
                               <div className="flex items-center gap-1.5 mb-1 opacity-90">
-                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
-                                <span className="text-xs font-medium">
+                                <span className="text-xs font-medium whitespace-nowrap">
                                   {schedule.startTime} - {schedule.endTime}
                                 </span>
                               </div>
                               {schedule.room && (
                                 <div className="flex items-center gap-1.5 opacity-80">
-                                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                                   </svg>
-                                  <span className="text-xs truncate">
+                                  <span className="text-xs truncate break-words">
                                     {schedule.room}
                                   </span>
                                 </div>
@@ -533,36 +562,73 @@ const MyCalendar: React.FC = () => {
                     </div>
 
                     {/* Tasks Due Section - Below Timeline */}
-                    <div className="border-t-2 border-gray-200 bg-gray-50 p-3 min-h-[180px]">
-                      <h3 className="text-xs font-bold text-gray-700 uppercase tracking-wide mb-3 flex items-center gap-1.5">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                        </svg>
-                        Tasks Due ({dayHomeworks.length})
-                      </h3>
+                    <div className="border-t-2 border-indigo-200 bg-gradient-to-br from-indigo-50 to-purple-50 p-5 min-h-[220px]">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-sm font-bold text-indigo-900 uppercase tracking-wide flex items-center gap-2">
+                          <div className="bg-indigo-500 p-1.5 rounded-lg">
+                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                            </svg>
+                          </div>
+                          Tasks Due
+                        </h3>
+                        {dayHomeworks.length > 0 && (
+                          <span className="bg-indigo-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-md">
+                            {dayHomeworks.length}
+                          </span>
+                        )}
+                      </div>
                       {dayHomeworks.length === 0 ? (
-                        <p className="text-gray-400 text-xs text-center py-4">No tasks due</p>
+                        <div className="flex items-center justify-center py-10">
+                          <div className="text-center">
+                            <div className="bg-indigo-100 rounded-full p-4 inline-block mb-3">
+                              <svg className="w-8 h-8 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                            </div>
+                            <p className="text-indigo-600 text-sm font-medium">No tasks due</p>
+                          </div>
+                        </div>
                       ) : (
-                        <div className="space-y-2 max-h-36 overflow-y-auto">
+                        <div className="space-y-3 max-h-44 overflow-y-auto pr-1 custom-scrollbar">
                           {dayHomeworks.map(hw => {
                             const colors = getTypeColors(hw.type);
                             return (
                               <Link
                                 key={hw.id}
                                 to={`/homework/${hw.id}`}
-                                className="block rounded-lg px-3 py-2 text-xs bg-white border-l-4 shadow-sm hover:shadow-md transition-all"
-                                style={{ borderColor: colors.text.replace('text-', '#').replace('-700', '') }}
+                                className="group block rounded-xl p-4 bg-white shadow-md hover:shadow-xl transition-all duration-200 border-l-4 border-transparent hover:border-l-indigo-500"
+                                style={{ borderLeftColor: colors.border.includes('red') ? '#dc2626' : colors.border.includes('purple') ? '#9333ea' : '#3b82f6' }}
                               >
-                                <div className="flex items-center justify-between gap-2">
-                                  <div className="flex-1 min-w-0">
-                                    <div className="font-bold text-gray-900 truncate">
-                                      {hw.title}
-                                    </div>
-                                    <div className={`text-[10px] ${colors.text} font-semibold uppercase tracking-wide mt-0.5`}>
+                                <div className="flex items-start gap-3">
+                                  <div className={`flex-shrink-0 p-2.5 rounded-lg ${colors.bgLight} group-hover:scale-110 transition-transform`}>
+                                    <svg className={`w-5 h-5 ${colors.text}`} fill="currentColor" viewBox="0 0 20 20">
+                                      {hw.type === 'exam' ? (
+                                        <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" />
+                                      ) : hw.type === 'quiz' ? (
+                                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                                      ) : (
+                                        <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z" />
+                                      )}
+                                    </svg>
+                                  </div>
+                                  <div className="flex-1 min-w-0 overflow-hidden">
+                                    <div className={`inline-block text-xs ${colors.text} font-bold uppercase tracking-wider px-2.5 py-1 rounded-md ${colors.bgLight} mb-2`}>
                                       {colors.label}
                                     </div>
+                                    <h4 className="font-bold text-gray-900 text-sm leading-snug mb-1 group-hover:text-indigo-600 transition-colors line-clamp-2 break-words">
+                                      {hw.title}
+                                    </h4>
+                                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                                      <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                      </svg>
+                                      <span className="font-medium whitespace-nowrap">
+                                        {hw.deadline.toDate().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                                      </span>
+                                    </div>
                                   </div>
-                                  <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <svg className="w-5 h-5 text-gray-400 flex-shrink-0 group-hover:text-indigo-500 group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                                   </svg>
                                 </div>

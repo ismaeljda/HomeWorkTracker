@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { doc, setDoc, collection, query, where, getDocs, updateDoc } from 'firebase/firestore';
+import { doc, setDoc, collection, query, where, getDocs, updateDoc, arrayUnion, getDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 
 const Signup: React.FC = () => {
@@ -43,9 +43,9 @@ const Signup: React.FC = () => {
     setLoading(true);
 
     try {
-      // Search for invitation code
-      const invitationsRef = collection(db, 'invitations');
-      const q = query(invitationsRef, where('code', '==', invitationCode.toUpperCase()));
+      // Search for activation code in activationCodes collection
+      const activationCodesRef = collection(db, 'activationCodes');
+      const q = query(activationCodesRef, where('code', '==', invitationCode.toUpperCase()));
       const querySnapshot = await getDocs(q);
 
       if (querySnapshot.empty) {
@@ -77,30 +77,69 @@ const Signup: React.FC = () => {
     e.preventDefault();
     setError('');
 
-    if (formData.password !== formData.confirmPassword) {
-      return setError('Passwords do not match');
-    }
+    // Use default password if provided in activation code, otherwise use user's password
+    const passwordToUse = invitationData.defaultPassword || formData.password;
 
-    if (formData.password.length < 6) {
-      return setError('Password must be at least 6 characters');
+    if (!invitationData.defaultPassword) {
+      if (formData.password !== formData.confirmPassword) {
+        return setError('Passwords do not match');
+      }
+
+      if (formData.password.length < 6) {
+        return setError('Password must be at least 6 characters');
+      }
     }
 
     setLoading(true);
 
     try {
-      const user = await signup(invitationData.email, formData.password);
+      const user = await signup(invitationData.email, passwordToUse);
 
-      // Create user document in Firestore
-      await setDoc(doc(db, 'users', user.uid), {
+      // Create user document in Firestore with all data from activation code
+      const userDocData: any = {
         uid: user.uid,
         name: invitationData.name,
         email: invitationData.email,
         role: invitationData.role,
         classId: invitationData.classId || ''
-      });
+      };
 
-      // Mark invitation as used
-      await updateDoc(doc(db, 'invitations', invitationData.docId), {
+      // Add subjectIds for students
+      if (invitationData.role === 'eleve' && invitationData.subjectIds) {
+        userDocData.subjectIds = invitationData.subjectIds;
+      }
+
+      console.log('Creating user document with data:', userDocData);
+      await setDoc(doc(db, 'users', user.uid), userDocData);
+      console.log('User document created successfully');
+
+      // Update subjects to include this student (if student role)
+      if (invitationData.role === 'eleve' && invitationData.subjectIds && invitationData.subjectIds.length > 0) {
+        console.log('Updating subjects:', invitationData.subjectIds);
+        for (const subjectId of invitationData.subjectIds) {
+          try {
+            const subjectRef = doc(db, 'subjects', subjectId);
+            const subjectSnap = await getDoc(subjectRef);
+
+            if (subjectSnap.exists()) {
+              console.log(`Adding student ${user.uid} to subject ${subjectId}`);
+              await updateDoc(subjectRef, {
+                studentIds: arrayUnion(user.uid)
+              });
+              console.log(`Successfully added student to subject ${subjectId}`);
+            } else {
+              console.warn(`Subject ${subjectId} does not exist`);
+            }
+          } catch (error) {
+            console.error(`Error updating subject ${subjectId}:`, error);
+          }
+        }
+      } else {
+        console.log('Not updating subjects - role:', invitationData.role, 'subjectIds:', invitationData.subjectIds);
+      }
+
+      // Mark activation code as used
+      await updateDoc(doc(db, 'activationCodes', invitationData.docId), {
         used: true,
         usedAt: new Date(),
         userId: user.uid
@@ -185,34 +224,53 @@ const Signup: React.FC = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Password
-                </label>
-                <input
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  required
-                  placeholder="••••••••"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
-                />
-                <p className="text-xs text-gray-500 mt-1">Minimum 6 characters</p>
-              </div>
+              {invitationData.defaultPassword ? (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-center space-x-2 text-blue-700 mb-2">
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                    <span className="font-semibold">Default Password Assigned</span>
+                  </div>
+                  <p className="text-sm text-blue-700">
+                    Your account will be created with the default password: <strong className="font-mono">password123</strong>
+                  </p>
+                  <p className="text-xs text-blue-600 mt-2">
+                    You can change this password after logging in for the first time.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Password
+                    </label>
+                    <input
+                      type="password"
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      required
+                      placeholder="••••••••"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Minimum 6 characters</p>
+                  </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Confirm Password
-                </label>
-                <input
-                  type="password"
-                  value={formData.confirmPassword}
-                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                  required
-                  placeholder="••••••••"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
-                />
-              </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Confirm Password
+                    </label>
+                    <input
+                      type="password"
+                      value={formData.confirmPassword}
+                      onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                      required
+                      placeholder="••••••••"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                    />
+                  </div>
+                </>
+              )}
 
               <button
                 type="submit"

@@ -58,13 +58,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       if (user) {
         try {
+          console.log('AuthContext: Fetching user data for uid:', user.uid);
           const data = await getUserById(user.uid);
+          console.log('AuthContext: User data loaded:', data);
           setUserData(data);
         } catch (error) {
           console.error('Error fetching user data:', error);
           setUserData(null);
         }
       } else {
+        console.log('AuthContext: No user logged in');
         setUserData(null);
       }
 
