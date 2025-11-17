@@ -57,13 +57,15 @@ Students have access to all their academic information:
 - AI guides without revealing answers to encourage critical thinking
 - Conversation history persists for context-aware assistance
 - Clear chat option to start fresh
+- Answer only in french but can be extended to english
 
-**Discussion Summaries** (Teachers)
+**Discussion Summaries** (Teachers and Students)
 - AI analyzes public discussions and extracts:
   - Main difficulties students encountered
   - Key concepts discussed
   - Helpful explanations provided
   - Unanswered questions requiring teacher attention
+  - Answer only in french but can be extended to english
 
 ### 📅 Smart Calendar
 
@@ -91,7 +93,7 @@ Students have access to all their academic information:
 - **Frontend**: React 19 + TypeScript
 - **Styling**: Tailwind CSS
 - **Backend**: Firebase (Firestore, Authentication, Hosting)
-- **AI Integration**: Google Gemini 1.5 Pro via Cloudflare Worker proxy
+- **AI Integration**: Gemini-2.5-flash-litevia Cloudflare Worker proxy
 - **Build Tool**: Vite
 - **State Management**: React Context API
 - **UI Components**: Custom components with Joyride for tutorials
@@ -249,41 +251,10 @@ announcements/
 
 ## AI Configuration
 
-The AI assistant uses Google Gemini 1.5 Pro and is configured to:
+The AI assistant uses gemini-2.5-flash-lite and is configured to:
 - **Provide hints**, not direct answers
 - **Ask guiding questions** to encourage critical thinking
 - **Explain concepts** in simple terms
 - **Redirect** students who ask for complete solutions
 - **Respond in French** to match the educational context
 - **Maintain conversation context** for personalized assistance
-
-## Security Considerations
-
-- API keys stored in environment variables (never committed to git)
-- Gemini API key protected via Cloudflare Worker proxy
-- CORS configured to allow only authorized domains
-- Firebase Security Rules enforce role-based access
-- Activation codes required for user registration
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## License
-
-This project is licensed under the MIT License.
-
-## Support
-
-For issues, questions, or suggestions, please open an issue on GitHub or contact the development team.
-
-## Acknowledgments
-
-- Built with [React](https://react.dev/)
-- Powered by [Firebase](https://firebase.google.com/)
-- AI by [Google Gemini](https://ai.google.dev/)
-- Styled with [Tailwind CSS](https://tailwindcss.com/)
