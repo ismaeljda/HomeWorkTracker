@@ -1,5 +1,7 @@
 # HomeworkTracker
 
+> **⚠️ IMPORTANT: If the AI features (Gemini) are not working, it's likely because Cloudflare Workers is experiencing issues. The AI assistant and discussion summaries rely on a Cloudflare Worker proxy to securely access the Gemini API. Check [Cloudflare Status](https://www.cloudflarestatus.com/) or redeploy the worker using `cd cloudflare-worker && npx wrangler deploy`.**
+
 A comprehensive educational platform designed to streamline homework management and enhance student-teacher collaboration with AI-powered assistance.
 
 ## About the Project
